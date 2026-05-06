@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regex Matcher Visualizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVJkEZSMUkrQ6usKu8zIstOWilwtIozjizehr17l7CZrqSyJ5TLWGI63Z00XsoYx+N1QhK3DBnQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>
+  :root[data-theme="dark"] {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #18181f;
+    --surface: #1e1e28;
+    --surface2: #252532;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0f0f8;
+    --text2: #9999bb;
+    --text3: #5555778;
+    --accent: #6c63ff;
+    --accent2: #9b8fff;
+    --accent-glow: rgba(108,99,255,0.3);
+    --green: #22c98a;
+    --green-bg: rgba(34,201,138,0.12);
+    --green-border: rgba(34,201,138,0.3);
+    --red: #ff5c7a;
+    --red-bg: rgba(255,92,122,0.12);
+    --red-border: rgba(255,92,122,0.3);
+    --orange: #ffab40;
+    --orange-bg: rgba(255,171,64,0.12);
+    --orange-border: rgba(255,171,64,0.3);
+    --blue: #5bc0ff;
+    --blue-bg: rgba(91,192,255,0.12);
+    --blue-border: rgba(91,192,255,0.3);
+    --shadow: 0 8px 40px rgba(0,0,0,0.5);
+    --navbar-bg: rgba(10,10,15,0.9);
+  }
+  :root[data-theme="light"] {
+    --bg: #f0f0f8;
+    --bg2: #e8e8f4;
+    --bg3: #dcdce8;
+    --surface: #ffffff;
+    --surface2: #f5f5ff;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --text: #0a0a1a;
+    --text2: #5555778;
+    --text3: #9999bb;
+    --accent: #4f46e5;
+    --accent2: #7c6fff;
+    --accent-glow: rgba(79,70,229,0.2);
+    --green: #059669;
+    --green-bg: rgba(5,150,105,0.08);
+    --green-border: rgba(5,150,105,0.25);
+    --red: #dc2626;
+    --red-bg: rgba(220,38,38,0.08);
+    --red-border: rgba(220,38,38,0.25);
+    --orange: #d97706;
+    --orange-bg: rgba(217,119,6,0.08);
+    --orange-border: rgba(217,119,6,0.25);
+    --blue: #2563eb;
+    --blue-bg: rgba(37,99,235,0.08);
+    --blue-border: rgba(37,99,235,0.25);
+    --shadow: 0 8px 40px rgba(0,0,0,0.1);
+    --navbar-bg: rgba(240,240,248,0.9);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+    overflow-x: hidden;
+  }
+
+  /* Animated bg grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+  }
+
+  .glow-orb {
+    position: fixed;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    top: -200px; left: -200px;
+    animation: orbFloat 8s ease-in-out infinite;
+  }
+  .glow-orb2 {
+    top: auto; left: auto;
+    bottom: -200px; right: -100px;
+    animation-delay: -4s;
+    background: radial-gradient(circle, rgba(91,192,255,0.12) 0%, transparent 70%);
+  }
+  @keyframes orbFloat {
+    0%,100%{transform:translate(0,0)}
+    50%{transform:translate(40px,30px)}
+  }
+
+  /* NAVBAR */
+  html { scroll-behavior: smooth; }
+  nav.navbar {
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    backdrop-filter: blur(24px);
+    background: rgba(14, 18, 34, 0.72);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.15);
+    animation: navbarFade 0.8s ease both;
+  }
+  .navbar {
+    transition: transform 0.35s ease, box-shadow 0.35s ease, background 0.35s ease;
+  }
+  .navbar.scrolled {
+    transform: translateY(-2px);
+    box-shadow: 0 22px 60px rgba(0,0,0,0.2);
+    background: rgba(10, 14, 28, 0.88);
+  }
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0.85rem 1.5rem;
+  }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.95rem;
+    text-decoration: none;
+    color: inherit;
+  }
+  .logo {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.95), transparent 32%),
+                linear-gradient(135deg, var(--accent), var(--blue));
+    color: #fff;
+    box-shadow: 0 12px 30px rgba(79, 70, 229, 0.35);
+    font-size: 1.1rem;
+    animation: glowPulse 3.5s ease-in-out infinite;
+  }
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .brand-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #fff;
+    background: linear-gradient(110deg, #f8fafc, #c7d2fe);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .brand-subtitle {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.72);
+  }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .nav-link {
+    position: relative;
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.84);
+    text-decoration: none;
+    transition: transform 0.25s ease, color 0.25s ease;
+  }
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -6px;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--blue));
+    transition: width 0.25s ease;
+  }
+  .nav-link:hover,
+  .nav-link.active {
+    color: #fff;
+    transform: translateY(-1px);
+  }
+  .nav-link:hover::after,
+  .nav-link.active::after {
+    width: 100%;
+  }
+  .theme-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.3s ease, color 0.3s ease;
+  }
+  .theme-toggle:hover {
+    transform: translateY(-2px);
+    background: rgba(255,255,255,0.14);
+  }
+  .theme-toggle i {
+    position: absolute;
+    font-size: 0.95rem;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .theme-toggle .fa-sun { opacity: 0; transform: scale(0.85); }
+  [data-theme="light"] .theme-toggle .fa-sun { opacity: 1; transform: scale(1); }
+  [data-theme="light"] .theme-toggle .fa-moon { opacity: 0; transform: scale(0.85); }
+  .nav-toggle {
+    display: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+  }
+  .nav-toggle .bar {
+    display: block;
+    width: 22px;
+    height: 2px;
+    margin: 4px 0;
+    border-radius: 999px;
+    background: #fff;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+  .nav-toggle.open .bar:nth-child(1) {
+    transform: translateY(6px) rotate(45deg);
+  }
+  .nav-toggle.open .bar:nth-child(2) {
+    opacity: 0;
+  }
+  .nav-toggle.open .bar:nth-child(3) {
+    transform: translateY(-6px) rotate(-45deg);
+  }
+  .scroll-progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .scroll-progress-bar {
+    width: 0;
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--blue));
+    transition: width 0.15s ease;
+  }
+  @keyframes glowPulse {
+    0%, 100% { box-shadow: 0 12px 30px rgba(79, 70, 229, 0.35); }
+    50% { box-shadow: 0 18px 45px rgba(79, 70, 229, 0.45); }
+  }
+  @keyframes navbarFade {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media(max-width: 900px) {
+    .nav-inner { gap: 0.75rem; padding: 0.85rem 1rem; }
+    .nav-links {
+      position: fixed;
+      inset: 72px 0 0 0;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      padding: 1rem 1.25rem;
+      background: rgba(10, 12, 24, 0.95);
+      backdrop-filter: blur(24px);
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.35s ease, opacity 0.35s ease;
+      z-index: 950;
+    }
+    .nav-links.open {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .nav-link {
+      padding: 14px 0;
+      font-size: 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .theme-toggle {
+      position: relative;
+      z-index: 1001;
+    }
+    .nav-toggle { display: inline-flex; }
+  }
+
+  @media(max-width: 640px) {
+    .brand-title { font-size: 0.9rem; }
+    .brand-subtitle { font-size: 0.65rem; }
+  }
+
+  /* MAIN LAYOUT */
+  main {
+    position: relative; z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 88px 1.5rem 4rem;
+  }
+
+  /* HERO */
+  .hero {
+    text-align: center;
+    padding: 2.5rem 0 2rem;
+  }
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px; color: var(--accent2);
+    background: var(--accent-glow);
+    border: 1px solid var(--border2);
+    border-radius: 20px; padding: 5px 14px;
+    margin-bottom: 1.2rem;
+    animation: fadeDown 0.5s ease;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    margin-bottom: 0.8rem;
+    background: linear-gradient(135deg, var(--text) 0%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: fadeDown 0.5s 0.1s ease both;
+  }
+  .hero p {
+    font-size: 1rem; color: var(--text2);
+    max-width: 500px; margin: 0 auto;
+    line-height: 1.7;
+    animation: fadeDown 0.5s 0.2s ease both;
+  }
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .card:hover { border-color: var(--border2); }
+  .card-title {
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--text2);
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* INPUT SECTION */
+  .input-section { margin-bottom: 1.25rem; }
+  .input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  @media(max-width:600px){ .input-grid { grid-template-columns: 1fr; } }
+
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+  .field-label {
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text2);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .field-warn {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; color: var(--orange);
+    min-height: 16px;
+    transition: opacity 0.2s;
+  }
+  .field-input {
+    width: 100%;
+    font-family: 'Space Mono', monospace;
+    font-size: 16px; font-weight: 700;
+    color: var(--text);
+    background: var(--bg3);
+    border: 1.5px solid var(--border2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    outline: none;
+    letter-spacing: 0.08em;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  .field-input::placeholder { color: var(--text3); font-weight: 400; }
+  .field-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+    background: var(--bg2);
+  }
+  .field-input.invalid { border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-bg); }
+  .field-input.valid { border-color: var(--green); }
+
+  /* CHECK BUTTON */
+  .check-btn {
+    width: 100%;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px; font-weight: 800;
+    letter-spacing: 0.05em;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 50%, var(--blue) 100%);
+    background-size: 200% 200%;
+    border: none; border-radius: 12px;
+    padding: 16px 24px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, background-position 0.3s;
+    box-shadow: 0 4px 20px var(--accent-glow);
+    position: relative; overflow: hidden;
+  }
+  .check-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px var(--accent-glow);
+    background-position: right center;
+  }
+  .check-btn:active { transform: scale(0.98); }
+  .check-btn::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    pointer-events: none;
+  }
+  .check-btn .btn-inner { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .btn-icon { font-size: 20px; transition: transform 0.3s; }
+  .check-btn:hover .btn-icon { transform: rotate(15deg); }
+
+  /* RESULT CARD */
+  .result-card {
+    display: none;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    border: 1.5px solid;
+    animation: resultPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+  }
+  @keyframes resultPop {
+    from { opacity: 0; transform: scale(0.92) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .result-card.true { background: var(--green-bg); border-color: var(--green-border); }
+  .result-card.false { background: var(--red-bg); border-color: var(--red-border); }
+  .result-card.invalid { background: var(--orange-bg); border-color: var(--orange-border); }
+  .result-top { display: flex; align-items: center; gap: 14px; }
+  .result-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; flex-shrink: 0;
+  }
+  .result-card.true .result-icon { background: var(--green-bg); border: 1.5px solid var(--green-border); }
+  .result-card.false .result-icon { background: var(--red-bg); border: 1.5px solid var(--red-border); }
+  .result-card.invalid .result-icon { background: var(--orange-bg); border: 1.5px solid var(--orange-border); }
+  .result-label {
+    font-size: 2rem; font-weight: 800; letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .result-card.true .result-label { color: var(--green); }
+  .result-card.false .result-label { color: var(--red); }
+  .result-card.invalid .result-label { color: var(--orange); }
+  .result-desc { font-size: 14px; color: var(--text2); margin-top: 4px; line-height: 1.5; }
+  .result-actions {
+    display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap;
+  }
+  .action-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px; color: var(--text2);
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 7px 14px;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .action-btn:hover { color: var(--text); border-color: var(--accent); background: var(--accent-glow); }
+
+  /* VISUALIZATION */
+  .vis-section { margin-bottom: 1.25rem; }
+  .vis-chars {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-bottom: 1rem; padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .vis-char {
+    width: 44px; height: 44px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border-radius: 10px; border: 1.5px solid var(--border2);
+    font-family: 'Space Mono', monospace;
+    font-size: 18px; font-weight: 700;
+    background: var(--surface2);
+    color: var(--text2);
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .vis-char .idx {
+    position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; color: var(--text3); font-family: 'Space Mono', monospace;
+  }
+  .vis-char.active {
+    background: var(--blue-bg); border-color: var(--blue-border);
+    color: var(--blue); transform: translateY(-4px) scale(1.08);
+    box-shadow: 0 6px 20px var(--blue-border);
+  }
+  .vis-char.matched {
+    background: var(--green-bg); border-color: var(--green-border);
+    color: var(--green);
+  }
+  .vis-char.repeated {
+    background: var(--accent-glow); border-color: rgba(108,99,255,0.4);
+    color: var(--accent2);
+  }
+  .vis-char.failed {
+    background: var(--red-bg); border-color: var(--red-border);
+    color: var(--red); animation: shake 0.3s ease;
+  }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    25%{transform:translateX(-4px)}
+    75%{transform:translateX(4px)}
+  }
+
+  .steps-list { display: flex; flex-direction: column; gap: 8px; }
+  .step-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    font-size: 13px;
+    animation: stepIn 0.3s ease both;
+  }
+  @keyframes stepIn {
+    from { opacity: 0; transform: translateX(-12px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .step-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px; font-weight: 700; flex-shrink: 0;
+  }
+  .step-item.matched .step-num { background: var(--green-bg); color: var(--green); }
+  .step-item.repeated .step-num { background: var(--accent-glow); color: var(--accent2); }
+  .step-item.failed .step-num { background: var(--red-bg); color: var(--red); }
+  .step-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; font-weight: 700; padding: 2px 8px;
+    border-radius: 6px; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .step-item.matched .step-badge { background: var(--green-bg); color: var(--green); }
+  .step-item.repeated .step-badge { background: var(--accent-glow); color: var(--accent2); }
+  .step-item.failed .step-badge { background: var(--red-bg); color: var(--red); }
+  .step-text { color: var(--text2); flex: 1; }
+  .step-chars {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px; font-weight: 700; color: var(--text);
+    background: var(--bg3);
+    padding: 2px 8px; border-radius: 6px;
+    border: 1px solid var(--border2);
+  }
+
+  /* GRID LAYOUT */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  @media(max-width:768px){ .grid-2 { grid-template-columns: 1fr; } }
+
+  /* RULES PANEL */
+  .rules-table { width: 100%; border-collapse: collapse; }
+  .rules-table th {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--text3); padding: 6px 0; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .rules-table td { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .rules-table tr:last-child td { border-bottom: none; }
+  .sym-chip {
+    font-family: 'Space Mono', monospace;
+    font-size: 14px; font-weight: 700;
+    background: var(--accent-glow); color: var(--accent2);
+    border: 1px solid var(--border2);
+    padding: 3px 10px; border-radius: 6px; display: inline-block;
+  }
+  .example-row {
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px;
+  }
+  .ex-chip {
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 6px; padding: 3px 8px; color: var(--text2);
+  }
+
+  /* EXAMPLES / PLAYGROUND */
+  .examples-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+  }
+  .ex-btn {
+    font-family: 'Space Mono', monospace; font-size: 12px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    color: var(--text2); border-radius: 10px; padding: 12px;
+    cursor: pointer; text-align: left;
+    transition: all 0.2s; line-height: 1.5;
+  }
+  .ex-btn:hover {
+    border-color: var(--accent); color: var(--text);
+    background: var(--accent-glow); transform: translateY(-2px);
+  }
+  .ex-p { font-weight: 700; color: var(--text); font-size: 13px; }
+  .ex-q { color: var(--accent2); }
+  .ex-result { margin-top: 6px; }
+
+  /* COMPLEXITY */
+  .cpx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cpx-box {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px;
+  }
+  .cpx-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .cpx-val {
+    font-family: 'Space Mono', monospace; font-size: 18px; font-weight: 700;
+    color: var(--accent2);
+  }
+  .cpx-note { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  /* HISTORY */
+  .hist-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+  .hist-list::-webkit-scrollbar { width: 4px; }
+  .hist-list::-webkit-scrollbar-track { background: var(--bg3); border-radius: 4px; }
+  .hist-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+  .hist-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    font-size: 13px; cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .hist-item:hover { border-color: var(--accent); transform: translateX(4px); }
+  .hist-badge {
+    font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 6px; text-transform: uppercase; flex-shrink: 0;
+  }
+  .hist-badge.true { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .hist-badge.false { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+  .hist-badge.invalid { background: var(--orange-bg); color: var(--orange); border: 1px solid var(--orange-border); }
+  .hist-data { flex: 1; }
+  .hist-pair { font-family: 'Space Mono', monospace; color: var(--text); font-weight: 700; }
+  .hist-time { font-size: 11px; color: var(--text3); font-family: 'Space Mono', monospace; flex-shrink: 0; }
+  .hist-empty { text-align: center; padding: 1.5rem; color: var(--text3); font-size: 13px; }
+  .hist-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
+  .clear-btn {
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    color: var(--text3); background: none; border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 10px; cursor: pointer; transition: all 0.15s;
+  }
+  .clear-btn:hover { color: var(--red); border-color: var(--red-border); }
+
+  /* ALGORITHM SECTION */
+  .algo-section { margin-bottom: 1.25rem; }
+  .algo-steps {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px; margin-top: 10px;
+  }
+  .algo-step {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem;
+  }
+  .algo-step-num {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--accent-glow); color: var(--accent2);
+    font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 10px;
+  }
+  .algo-step-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .algo-step-desc { font-size: 12px; color: var(--text2); line-height: 1.6; }
+
+  /* FOOTER */
+  footer {
+    position: relative; z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 3rem 1.5rem;
+    font-family: 'Space Mono', monospace;
+  }
+  .footer-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 3rem;
+  }
+  @media(max-width:768px) {
+    .footer-container { grid-template-columns: 1fr; gap: 2rem; }
+  }
+  .footer-section h3 {
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--text);
+    margin-bottom: 1.5rem;
+  }
+  .footer-section-left {
+    display: flex; flex-direction: column; gap: 1rem;
+  }
+  .footer-brand {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+  .footer-brand-icon {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, #ffab40, #ff7043);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .footer-desc {
+    font-size: 13px; color: var(--text2);
+    line-height: 1.6;
+    max-width: 280px;
+  }
+  .footer-links {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .footer-link {
+    font-size: 14px; color: var(--text2);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-link:hover {
+    color: var(--accent2);
+  }
+  .footer-dev-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+  }
+  .footer-dev-name {
+    font-size: 1.25rem; font-weight: 800;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .footer-dev-label {
+    font-size: 11px; color: var(--text3);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .footer-dev-links {
+    display: flex; gap: 12px; justify-content: center;
+  }
+  .footer-icon-link {
+    width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .footer-icon-link svg {
+    width: 18px; height: 18px;
+    fill: currentColor;
+  }
+  .footer-icon-link:hover {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+    color: var(--accent2);
+    transform: translateY(-2px);
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 999;
+    background: var(--surface);
+    border: 1px solid var(--green-border);
+    border-radius: 12px; padding: 12px 18px;
+    font-family: 'Space Mono', monospace; font-size: 13px; color: var(--green);
+    box-shadow: var(--shadow);
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* DIVIDER */
+  .section-gap { margin-bottom: 1.25rem; }
+</style>
+</head>
+<body>
+
+<div class="glow-orb"></div>
+<div class="glow-orb glow-orb2"></div>
+
+<!-- NAVBAR -->
+<nav class="navbar" id="navbar">
+  <div class="nav-inner">
+    <a href="#hero" class="nav-brand">
+      <div class="brand-text">
+        <span class="brand-title">Regex Matcher Visualizer</span>
+        <span class="brand-subtitle">Simplified Regular Expression Matching</span>
+      </div>
+    </a>
+
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+    </button>
+
+    <div class="nav-links" id="navLinks">
+      <a href="#hero" class="nav-link active">Home</a>
+      <a href="#visSection" class="nav-link">Visualizer</a>
+      <a href="#examplesSection" class="nav-link">Examples</a>
+      <a href="#algoSection" class="nav-link">Algorithm</a>
+      <a href="#complexitySection" class="nav-link">Complexity</a>
+      <a href="#aboutSection" class="nav-link">About</a>
+    </div>
+
+    <button class="theme-toggle" id="themeToggle" title="Toggle dark/light mode" aria-label="Toggle theme">
+      <i class="fa-solid fa-moon"></i>
+      <i class="fa-solid fa-sun"></i>
+    </button>
+  </div>
+  <div class="scroll-progress"><div class="scroll-progress-bar" id="scrollProgressBar"></div></div>
+</nav>
+
+<main>
+  <!-- HERO -->
+  <div class="hero" id="hero">
+    <!-- <div class="hero-tag"></div> -->
+    <h1>Regex Matcher</h1>
+    <p>Test string matching with simplified regular expressions. Visualize every step of the algorithm in real time.</p>
+  </div>
+
+  <!-- INPUT CARD -->
+  <div class="card input-section section-gap">
+    <div class="card-title"><span class="dot"></span>Input</div>
+    <div class="input-grid">
+      <div class="field-group">
+        <div class="field-label">
+          <span>Input String (P)</span>
+        </div>
+        <input class="field-input" id="pInput" type="text" placeholder="e.g. AAAB" maxlength="30" autocomplete="off" spellcheck="false">
+        <div class="field-warn" id="pWarn"></div>
+      </div>
+      <div class="field-group">
+        <div class="field-label">
+          <span>Pattern (Q)</span>
+        </div>
+        <input class="field-input" id="qInput" type="text" placeholder="e.g. A+B" maxlength="30" autocomplete="off" spellcheck="false">
+        <div class="field-warn" id="qWarn"></div>
+      </div>
+    </div>
+    <button class="check-btn" id="checkBtn">
+      <div class="btn-inner">
+        <span class="btn-icon">⚡</span>
+        Check Match
+      </div>
+    </button>
+  </div>
+
+  <!-- RESULT CARD -->
+  <div class="result-card" id="resultCard">
+    <div class="result-top">
+      <div class="result-icon" id="resultIcon"></div>
+      <div>
+        <div class="result-label" id="resultLabel"></div>
+        <div class="result-desc" id="resultDesc"></div>
+      </div>
+    </div>
+    <div class="result-actions">
+      <button class="action-btn" id="copyBtn">📋 Copy Result</button>
+      <button class="action-btn" id="downloadBtn">📥 Download</button>
+    </div>
+  </div>
+
+  <!-- VISUALIZATION -->
+  <div class="card vis-section section-gap" id="visSection" style="display:none">
+    <div class="card-title"><span class="dot"></span>Step-by-Step Visualization</div>
+    <div style="margin-bottom:24px">
+      <div style="font-size:12px;color:var(--text3);font-family:'Space Mono',monospace;margin-bottom:10px">STRING CHARACTERS</div>
+      <div class="vis-chars" id="visChars"></div>
+    </div>
+    <div>
+      <div style="font-size:12px;color:var(--text3);font-family:'Space Mono',monospace;margin-bottom:10px">MATCHING STEPS</div>
+      <div class="steps-list" id="stepsList"></div>
+    </div>
+  </div>
+
+  <!-- RULES + COMPLEXITY -->
+  <div class="grid-2 section-gap">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Pattern Rules</div>
+      <table class="rules-table">
+        <thead>
+          <tr>
+            <th style="width:80px">Symbol</th>
+            <th>Meaning</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="sym-chip">A–Z</span></td>
+            <td style="color:var(--text2)">Matches exactly that one character</td>
+          </tr>
+          <tr>
+            <td><span class="sym-chip">+</span></td>
+            <td style="color:var(--text2)">One or more of the preceding character</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:1rem">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Examples</div>
+        <div class="example-row">
+          <span class="ex-chip">A+B</span>
+          <span style="font-size:12px;color:var(--text2)">→ one or more A, then B</span>
+        </div>
+        <div class="example-row" style="margin-top:6px">
+          <span class="ex-chip">AB</span>
+          <span style="font-size:12px;color:var(--text2)">→ exactly A then B</span>
+        </div>
+      </div>
+      <div style="margin-top:1rem;padding:10px 12px;background:var(--red-bg);border:1px solid var(--red-border);border-radius:8px;font-size:12px;color:var(--text2)">
+        ⚠ <strong style="color:var(--orange)">Invalid:</strong> +AB (starts with +), A++B (double +), AB+ (ends with +)
+      </div>
+    </div>
+    <div class="card" id="complexitySection">
+      <div class="card-title"><span class="dot"></span>Complexity</div>
+      <div class="cpx-grid">
+        <div class="cpx-box">
+          <div class="cpx-label">Time</div>
+          <div class="cpx-val">O(n·m)</div>
+          <div class="cpx-note">n = string, m = pattern</div>
+        </div>
+        <div class="cpx-box">
+          <div class="cpx-label">Space</div>
+          <div class="cpx-val">O(1)</div>
+          <div class="cpx-note">No extra data structures</div>
+        </div>
+      </div>
+      <div style="margin-top:1rem;padding:12px;background:var(--bg3);border-radius:10px;border:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:700;margin-bottom:6px">How it works</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">
+          The algorithm scans the pattern left→right. For each token it checks if the current string position matches. The <span style="color:var(--accent2);font-family:'Space Mono',monospace">+</span> operator greedily consumes all consecutive matching characters. The match succeeds only if the entire string is consumed.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAYGROUND -->
+  <div class="card section-gap" id="examplesSection">
+    <div class="card-title"><span class="dot"></span>Regex Playground — Click to Try</div>
+    <div class="examples-grid" id="examplesGrid"></div>
+  </div>
+
+  <!-- ALGORITHM EXPLANATION -->
+  <div class="card algo-section section-gap" id="algoSection">
+    <div class="card-title"><span class="dot"></span>Algorithm Explained</div>
+    <div class="algo-steps">
+      <div class="algo-step">
+        <div class="algo-step-num">01</div>
+        <div class="algo-step-title">Validate Inputs</div>
+        <div class="algo-step-desc">Check that the string contains only A–Z, and the pattern has no invalid syntax like <code style="font-family:'Space Mono',monospace;color:var(--orange)">+</code> at start, double <code style="font-family:'Space Mono',monospace;color:var(--orange)">++</code>, or trailing <code style="font-family:'Space Mono',monospace;color:var(--orange)">+</code>.</div>
+      </div>
+      <div class="algo-step">
+        <div class="algo-step-num">02</div>
+        <div class="algo-step-title">Tokenize Pattern</div>
+        <div class="algo-step-desc">Break pattern into tokens: either <em>exact</em> (e.g. <code style="font-family:'Space Mono',monospace;color:var(--accent2)">B</code>) or <em>plus</em> (e.g. <code style="font-family:'Space Mono',monospace;color:var(--accent2)">A+</code>). Each token describes what to consume from the string.</div>
+      </div>
+      <div class="algo-step">
+        <div class="algo-step-num">03</div>
+        <div class="algo-step-title">Match Tokens</div>
+        <div class="algo-step-desc">For <em>exact</em> tokens: consume one character. For <em>plus</em> tokens: consume one or more of that character greedily. Fail if the expected character isn't there.</div>
+      </div>
+      <div class="algo-step">
+        <div class="algo-step-num">04</div>
+        <div class="algo-step-title">Full Coverage Check</div>
+        <div class="algo-step-desc">After all tokens are matched, check that the string has been fully consumed. If any characters remain, it's a <span style="color:var(--red)">FALSE</span> — the pattern didn't cover the whole string.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="card section-gap">
+    <div class="hist-header">
+      <div class="card-title" style="margin-bottom:0"><span class="dot"></span>History</div>
+      <button class="clear-btn" id="clearHistBtn">🗑 Clear</button>
+    </div>
+    <div class="hist-list" id="histList">
+      <div class="hist-empty">No checks yet — run your first match above!</div>
+    </div>
+  </div>
+</main>
+
+<footer id="aboutSection">
+  <div class="footer-container">
+    <!-- Left Section -->
+    <div class="footer-section footer-section-left">
+      <div class="footer-brand">
+        <div class="footer-brand-icon">R+</div>
+        <span>Regex<span style="color:var(--accent2)">Lab</span></span>
+      </div>
+      <p class="footer-desc">An interactive educational platform dedicated to visualizing and mastering regular expression pattern matching with the + operator.</p>
+    </div>
+
+    <!-- Middle Section -->
+    <div class="footer-section">
+      <h3>Explore</h3>
+      <div class="footer-links">
+        <a href="#" class="footer-link">Home</a>
+        <a href="#" class="footer-link">Rules</a>
+        <a href="#" class="footer-link">Visualize</a>
+        <a href="#" class="footer-link">Algorithm</a>
+      </div>
+    </div>
+
+    <!-- Right Section -->
+    <div class="footer-section">
+      <h3>Developer</h3>
+      <div class="footer-dev-card">
+        <div class="footer-dev-label">Designed and Built by</div>
+        <div class="footer-dev-name">Md Irfan</div>
+        <div class="footer-dev-links">
+          <a href="https://github.com/Mdirfan077" target="_blank" class="footer-icon-link" title="GitHub">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.091-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.418-1.305.76-1.605-2.665-.305-5.466-1.332-5.466-5.931 0-1.31.468-2.38 1.235-3.22-.123-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23a11.52 11.52 0 0 1 3.004-.404c1.02.005 2.045.138 3.003.404 2.289-1.552 3.295-1.23 3.295-1.23.655 1.653.243 2.874.12 3.176.77.84 1.233 1.91 1.233 3.22 0 4.61-2.803 5.624-5.475 5.921.43.372.815 1.102.815 2.222 0 1.606-.015 2.896-.015 3.289 0 .32.216.694.825.576C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+          </a>
+          <a href="https://www.linkedin.com/in/md-irfan-lpu/" target="_blank" class="footer-icon-link" title="LinkedIn">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.98 3.5C4.98 4.88 3.88 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1 4.98 2.12 4.98 3.5zM.06 8.99h4.88V24H.06V8.99zm7.14 0h4.68v2.04h.07c.65-1.23 2.24-2.53 4.61-2.53 4.93 0 5.84 3.24 5.84 7.43V24h-4.88v-7.99c0-1.91-.04-4.36-2.66-4.36-2.67 0-3.08 2.08-3.08 4.23V24H7.2V8.99z"/></svg>
+          </a>
+          <a href="https://mdirfan-portfolio.vercel.app/" target="_blank" class="footer-icon-link" title="Portfolio">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c1.19 0 2.33.27 3.37.76-.1.31-.22.61-.36.9-1.14-.37-2.29-.56-3.51-.56s-2.37.19-3.51.56c-.14-.29-.26-.59-.36-.9C9.67 4.27 10.81 4 12 4zm3.9 3.39c.72 1.04 1.1 2.26 1.1 3.61 0 2.5-1.54 4.63-3.73 5.47-.12-.38-.29-.74-.5-1.07 1.45-.71 2.42-2.12 2.42-3.8 0-1.02-.36-1.96-.96-2.7zm-3.9 11.61c-1.46 0-2.79-.5-3.84-1.33.18-.6.45-1.17.79-1.68 1.04.6 2.2.94 3.42.98V20zm-4.19-3.34c-1.09-.95-1.75-2.34-1.75-3.87 0-1.34.54-2.55 1.41-3.44.92.84 2.15 1.37 3.57 1.37 1.96 0 3.6-1.05 4.47-2.6.44.78.69 1.66.69 2.59 0 2.24-1.18 4.19-2.96 5.26-1.02.62-2.15.95-3.43.95-.73 0-1.43-.12-2.03-.26z"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---- THEME ----
+const themeToggle = document.getElementById('themeToggle');
+let theme = localStorage.getItem('rmv-theme') || 'dark';
+document.documentElement.setAttribute('data-theme', theme);
+if (themeToggle) {
+  themeToggle.addEventListener('click', () => {
+    theme = theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('rmv-theme', theme);
+  });
+}
+
+const navToggle = document.getElementById('navToggle');
+const navLinks = document.getElementById('navLinks');
+const navbar = document.getElementById('navbar');
+const progressBar = document.getElementById('scrollProgressBar');
+const navItems = Array.from(document.querySelectorAll('.nav-link'));
+const sections = Array.from(document.querySelectorAll('#hero, #visSection, #examplesSection, #algoSection, #complexitySection, #aboutSection'));
+
+function setActiveSection() {
+  const fromTop = window.scrollY + 88;
+  let currentId = 'hero';
+
+  sections.forEach(section => {
+    if (section.offsetTop <= fromTop) {
+      currentId = section.id;
+    }
+  });
+
+  navItems.forEach(link => {
+    link.classList.toggle('active', link.getAttribute('href') === `#${currentId}`);
+  });
+}
+
+function updateNavbarState() {
+  const scrollY = window.scrollY;
+  const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = scrollHeight > 0 ? (scrollY / scrollHeight) * 100 : 0;
+
+  progressBar.style.width = `${progress}%`;
+  navbar.classList.toggle('scrolled', scrollY > 30);
+  setActiveSection();
+}
+
+function toggleMobileMenu() {
+  navLinks.classList.toggle('open');
+  navToggle.classList.toggle('open');
+}
+
+if (navToggle && navLinks) {
+  navToggle.addEventListener('click', toggleMobileMenu);
+  navItems.forEach(link => {
+    link.addEventListener('click', () => {
+      if (navLinks.classList.contains('open')) {
+        toggleMobileMenu();
+      }
+    });
+  });
+}
+
+window.addEventListener('scroll', updateNavbarState, { passive: true });
+window.addEventListener('resize', updateNavbarState);
+updateNavbarState();
+
+// ---- CORE LOGIC ----
+function detectInvalid(q) {
+  if (!q || !q.trim()) return 'Pattern cannot be empty';
+  if (!/^[A-Z+]*$/.test(q)) return 'Only uppercase A–Z and + allowed in pattern';
+  if (q[0] === '+') return 'Pattern cannot start with +';
+  if (q[q.length - 1] === '+') return 'Pattern cannot end with +';
+  if (q.includes('++')) return 'Consecutive ++ is not valid syntax';
+  // Check for + without preceding letter (handled by above rules)
+  return null;
+}
+
+function tokenize(q) {
+  const tokens = [];
+  for (let i = 0; i < q.length;) {
+    const ch = q[i];
+    if (i + 1 < q.length && q[i + 1] === '+') {
+      tokens.push({ type: 'plus', char: ch });
+      i += 2;
+    } else {
+      tokens.push({ type: 'exact', char: ch });
+      i++;
+    }
+  }
+  return tokens;
+}
+
+function matchFull(p, tokens) {
+  const steps = [];
+  let si = 0;
+  for (let ti = 0; ti < tokens.length; ti++) {
+    const tok = tokens[ti];
+    if (tok.type === 'exact') {
+      if (si >= p.length || p[si] !== tok.char) {
+        steps.push({
+          type: 'failed',
+          label: si >= p.length
+            ? `Expected '${tok.char}' but string ended`
+            : `Expected '${tok.char}' but found '${p[si]}' at index ${si}`,
+          chars: si < p.length ? [si] : [],
+          display: tok.char
+        });
+        return { ok: false, steps };
+      }
+      steps.push({
+        type: 'matched',
+        label: `Character '${p[si]}' matched pattern '${tok.char}' at index ${si}`,
+        chars: [si],
+        display: p[si]
+      });
+      si++;
+    } else {
+      if (si >= p.length || p[si] !== tok.char) {
+        steps.push({
+          type: 'failed',
+          label: si >= p.length
+            ? `'${tok.char}+' needs ≥1 '${tok.char}' but string ended`
+            : `'${tok.char}+' needs '${tok.char}' but found '${p[si]}' at index ${si}`,
+          chars: si < p.length ? [si] : [],
+          display: tok.char + '+'
+        });
+        return { ok: false, steps };
+      }
+      const start = si;
+      while (si < p.length && p[si] === tok.char) si++;
+      const count = si - start;
+      const chars = Array.from({ length: count }, (_, k) => start + k);
+      steps.push({
+        type: 'repeated',
+        label: `'${tok.char}+' consumed ${count} × '${tok.char}' (indices ${start}–${si - 1})`,
+        chars,
+        display: tok.char + '+'
+      });
+    }
+  }
+  if (si < p.length) {
+    steps.push({
+      type: 'failed',
+      label: `String not fully matched — '${p.slice(si)}' remains (index ${si}+)`,
+      chars: Array.from({ length: p.length - si }, (_, k) => si + k),
+      display: '…'
+    });
+    return { ok: false, steps };
+  }
+  return { ok: true, steps };
+}
+
+// ---- LIVE VALIDATION ----
+const pInput = document.getElementById('pInput');
+const qInput = document.getElementById('qInput');
+const pWarn = document.getElementById('pWarn');
+const qWarn = document.getElementById('qWarn');
+
+function liveValidate() {
+  const p = pInput.value;
+  const q = qInput.value;
+  // P validation
+  if (p && !/^[A-Z]*$/.test(p)) {
+    pWarn.textContent = '⚠ Only uppercase A–Z allowed';
+    pInput.classList.add('invalid');
+    pInput.classList.remove('valid');
+  } else if (p) {
+    pWarn.textContent = '';
+    pInput.classList.remove('invalid');
+    pInput.classList.add('valid');
+  } else {
+    pWarn.textContent = '';
+    pInput.classList.remove('invalid', 'valid');
+  }
+  // Q validation
+  if (q) {
+    const inv = detectInvalid(q);
+    if (inv) {
+      qWarn.textContent = '⚠ ' + inv;
+      qInput.classList.add('invalid');
+      qInput.classList.remove('valid');
+    } else {
+      qWarn.textContent = '';
+      qInput.classList.remove('invalid');
+      qInput.classList.add('valid');
+    }
+  } else {
+    qWarn.textContent = '';
+    qInput.classList.remove('invalid', 'valid');
+  }
+}
+
+pInput.addEventListener('input', liveValidate);
+qInput.addEventListener('input', liveValidate);
+pInput.addEventListener('keydown', e => e.key === 'Enter' && runMatch());
+qInput.addEventListener('keydown', e => e.key === 'Enter' && runMatch());
+
+// ---- RENDER RESULT ----
+const resultCard = document.getElementById('resultCard');
+const resultLabel = document.getElementById('resultLabel');
+const resultDesc = document.getElementById('resultDesc');
+const resultIcon = document.getElementById('resultIcon');
+
+function showResult(type, label, desc) {
+  resultCard.style.display = 'block';
+  resultCard.className = 'result-card ' + type;
+  resultLabel.textContent = label;
+  resultDesc.textContent = desc;
+  const icons = { true: '✅', false: '❌', invalid: '⚠️' };
+  resultIcon.textContent = icons[type];
+  void resultCard.offsetWidth; // re-trigger animation
+  resultCard.style.animation = 'none';
+  requestAnimationFrame(() => {
+    resultCard.style.animation = '';
+  });
+}
+
+// ---- RENDER VISUALIZATION ----
+const visCard = document.getElementById('visCard');
+const visChars = document.getElementById('visChars');
+const stepsList = document.getElementById('stepsList');
+
+function renderVis(p, steps) {
+  visCard.style.display = 'block';
+  // Build char state map
+  const charState = Array(p.length).fill('');
+  steps.forEach(s => s.chars.forEach(ci => {
+    if (ci >= 0 && ci < p.length) charState[ci] = s.type;
+  }));
+
+  visChars.innerHTML = p.split('').map((c, i) => `
+    <div class="vis-char ${charState[i]}" style="animation-delay:${i * 50}ms">
+      ${c}
+      <span class="idx">${i}</span>
+    </div>
+  `).join('');
+
+  const badgeLabel = { matched: 'MATCH', repeated: 'REPEAT', failed: 'FAIL' };
+  stepsList.innerHTML = steps.map((s, i) => `
+    <div class="step-item ${s.type}" style="animation-delay:${i * 80}ms">
+      <div class="step-num">${i + 1}</div>
+      <span class="step-badge">${badgeLabel[s.type]}</span>
+      <span class="step-text">${s.label}</span>
+      <span class="step-chars">${s.display}</span>
+    </div>
+  `).join('');
+}
+
+// ---- MAIN MATCH ----
+let lastResult = null;
+
+function runMatch() {
+  const p = pInput.value.trim();
+  const q = qInput.value.trim();
+
+  if (!p && !q) { showToast('Please enter both string and pattern'); return; }
+  if (!p) { showToast('Please enter the input string'); return; }
+  if (!q) { showToast('Please enter the pattern'); return; }
+
+  if (!/^[A-Z]+$/.test(p)) {
+    showResult('invalid', 'INVALID INPUT', 'Input string must contain only uppercase A–Z letters.');
+    visCard.style.display = 'none';
+    return;
+  }
+
+  const inv = detectInvalid(q);
+  if (inv) {
+    showResult('invalid', 'INVALID PATTERN', inv);
+    visCard.style.display = 'none';
+    addHistory(p, q, 'invalid');
+    lastResult = { p, q, result: 'INVALID PATTERN' };
+    return;
+  }
+
+  const tokens = tokenize(q);
+  const { ok, steps } = matchFull(p, tokens);
+  renderVis(p, steps);
+
+  if (ok) {
+    showResult('true', 'TRUE', `"${p}" fully matches pattern "${q}" ✓`);
+    addHistory(p, q, 'true');
+    lastResult = { p, q, result: 'TRUE' };
+  } else {
+    showResult('false', 'FALSE', `"${p}" does not match pattern "${q}" — see visualization for details.`);
+    addHistory(p, q, 'false');
+    lastResult = { p, q, result: 'FALSE' };
+  }
+}
+
+document.getElementById('checkBtn').addEventListener('click', runMatch);
+
+// ---- COPY / DOWNLOAD ----
+document.getElementById('copyBtn').addEventListener('click', () => {
+  if (!lastResult) return;
+  const text = `Regex Match Result\nString: ${lastResult.p}\nPattern: ${lastResult.q}\nResult: ${lastResult.result}`;
+  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard!'));
+});
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  if (!lastResult) return;
+  const text = `Regex Match Result\n${'='.repeat(30)}\nString:  ${lastResult.p}\nPattern: ${lastResult.q}\nResult:  ${lastResult.result}\n${'='.repeat(30)}\nGenerated by RegexLab`;
+  const blob = new Blob([text], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'regex-result.txt';
+  a.click();
+  showToast('Result downloaded!');
+});
+
+// ---- TOAST ----
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ---- HISTORY ----
+let history = [];
+try {
+  history = JSON.parse(localStorage.getItem('rmv-history') || '[]');
+  if (!Array.isArray(history)) history = [];
+} catch (error) {
+  history = [];
+  localStorage.removeItem('rmv-history');
+}
+
+function addHistory(p, q, res) {
+  const entry = { p, q, res, t: new Date().toLocaleTimeString() };
+  history.unshift(entry);
+  if (history.length > 15) history.pop();
+  localStorage.setItem('rmv-history', JSON.stringify(history));
+  renderHistory();
+}
+
+function renderHistory() {
+  const el = document.getElementById('histList');
+  if (!history.length) {
+    el.innerHTML = '<div class="hist-empty">No checks yet — run your first match above!</div>';
+    return;
+  }
+  el.innerHTML = history.map((h, i) => `
+    <div class="hist-item" onclick="loadHistory(${i})">
+      <div class="hist-badge ${h.res}">${h.res.toUpperCase()}</div>
+      <div class="hist-data">
+        <div class="hist-pair">${h.p} <span style="color:var(--text3)">vs</span> ${h.q}</div>
+      </div>
+      <div class="hist-time">${h.t}</div>
+    </div>
+  `).join('');
+}
+
+function loadHistory(i) {
+  const h = history[i];
+  pInput.value = h.p;
+  qInput.value = h.q;
+  liveValidate();
+  runMatch();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.getElementById('clearHistBtn').addEventListener('click', () => {
+  history = [];
+  localStorage.removeItem('rmv-history');
+  renderHistory();
+  showToast('History cleared');
+});
+
+// ---- PLAYGROUND ----
+const examples = [
+  { p: 'AAAB', q: 'A+B', result: 'true', note: 'A+ matches AAA' },
+  { p: 'AB', q: 'A+B', result: 'true', note: 'A+ matches single A' },
+  { p: 'AABA', q: 'AA', result: 'false', note: 'Extra chars remain' },
+  { p: 'BBBBC', q: 'B+C', result: 'true', note: 'B+ matches BBBB' },
+  { p: 'ABC', q: 'A+BC', result: 'true', note: 'A+ = one A' },
+  { p: 'XY', q: '+XY', result: 'invalid', note: 'Starts with +' },
+  { p: 'AABB', q: 'A+B+', result: 'invalid', note: 'Ends with +' },
+  { p: 'CCCC', q: 'C+', result: 'invalid', note: 'Ends with +' },
+  { p: 'XXYYZZ', q: 'X+Y+Z+', result: 'invalid', note: 'Ends with +' },
+  { p: 'XXYYZZ', q: 'X+Y+ZZ', result: 'true', note: 'Mixed + and exact' },
+  { p: 'A', q: 'A', result: 'true', note: 'Single exact match' },
+  { p: 'AB', q: 'BA', result: 'false', note: 'Wrong order' },
+];
+
+const resultEmoji = { true: '✅', false: '❌', invalid: '⚠️' };
+
+document.getElementById('examplesGrid').innerHTML = examples.map(ex => `
+  <button class="ex-btn" onclick="setExample('${ex.p}','${ex.q}')">
+    <div class="ex-p">${ex.p}</div>
+    <div class="ex-q">${ex.q}</div>
+    <div class="ex-result" style="font-size:11px;margin-top:4px;color:var(--text3)">${resultEmoji[ex.result]} ${ex.note}</div>
+  </button>
+`).join('');
+
+function setExample(p, q) {
+  pInput.value = p;
+  qInput.value = q;
+  liveValidate();
+  runMatch();
+  document.querySelector('.input-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ---- INIT ----
+renderHistory();
+</script>
+</body>
+</html>
